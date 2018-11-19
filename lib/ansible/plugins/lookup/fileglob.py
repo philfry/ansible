@@ -16,6 +16,10 @@ DOCUMENTATION = """
       _terms:
         description: path(s) of files to read
         required: True
+      ignore_missing:
+        description: Flag to control whether or not no matches found return a warning
+        type: boolean
+        default: False
     notes:
       - Patterns are only supported on files, not directory/paths.
       - Matching is against local system files on the Ansible controller.
@@ -55,10 +59,12 @@ class LookupModule(LookupBase):
 
     def run(self, terms, variables=None, **kwargs):
 
+        self.set_options(direct=kwargs)
+
         ret = []
         for term in terms:
             term_file = os.path.basename(term)
-            dwimmed_path = self.find_file_in_search_path(variables, 'files', os.path.dirname(term))
+            dwimmed_path = self.find_file_in_search_path(variables, 'files', os.path.dirname(term), ignore_missing=self.get_option('ignore_missing'))
             if dwimmed_path:
                 globbed = glob.glob(to_bytes(os.path.join(dwimmed_path, term_file), errors='surrogate_or_strict'))
                 ret.extend(to_text(g, errors='surrogate_or_strict') for g in globbed if os.path.isfile(g))
